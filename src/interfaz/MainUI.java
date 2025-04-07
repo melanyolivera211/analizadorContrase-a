@@ -1,5 +1,6 @@
 package interfaz;
 import analyzer.PasswordAnalyzer;
+import analyzer.PasswordRecommendation;
 import analyzer.PasswordReport;
 import analyzer.PasswordStrength;
 import static analyzer.PasswordStrength.MODERATE;
@@ -20,6 +21,7 @@ public class MainUI extends javax.swing.JFrame {
     private JButton analyzeButton;
     private JLabel resultLabel;
     private JLabel timeLabel;
+    private JLabel recommendation;
     private JProgressBar strengthBar;
     private PasswordAnalyzer analyzer; 
     
@@ -69,6 +71,11 @@ analyzer = new PasswordAnalyzer();
         timeLabel = new JLabel("");
         gbc.gridy = 4;
         add(timeLabel, gbc);
+        
+        // Eriqueta de recomendacio de contraseña
+        recommendation = new JLabel();
+       gbc.gridy = 5;
+        add(recommendation, gbc);
 
         analyzeButton.addActionListener(new ActionListener() {
             @Override
@@ -85,6 +92,7 @@ private void analyzePassword() {
         }
 
         PasswordReport report = analyzer.analyze(password);
+        String pass = PasswordRecommendation.enhancePassword(password);
         int strength = (int) (report.getOverallScore() * 100);
         strengthBar.setValue(strength);
         strengthBar.setForeground(getColor(report.getStrength()));
@@ -92,6 +100,7 @@ private void analyzePassword() {
 
         resultLabel.setText("Fuerza: " + report.getStrength().getDescription());
         timeLabel.setText("Tiempo estimado de descifrado: " + report.getBruteForceTime());
+        recommendation.setText("Contraseña recomendada: " + pass);
     }
 
 private Color getColor(PasswordStrength strength) {
