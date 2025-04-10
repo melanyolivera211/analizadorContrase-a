@@ -10,6 +10,8 @@ import static analyzer.PasswordStrength.VERY_WEAK;
 import static analyzer.PasswordStrength.WEAK;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 /**
@@ -22,67 +24,105 @@ public class MainUI extends javax.swing.JFrame {
     private JLabel resultLabel;
     private JLabel timeLabel;
     private JLabel recommendation;
+    private JTextField recommendedField;
+    private JButton copyButton;
     private JProgressBar strengthBar;
-    private PasswordAnalyzer analyzer; 
-    
-
+    private PasswordAnalyzer analyzer;
     /**
      * Creates new form MainUI
      */
     public MainUI() {
         initComponents();
-        setTitle("Analizador de Contraseñas");
-        setSize(450, 250);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        // Establecer layout primero
         setLayout(new GridBagLayout());
-        getContentPane().setBackground(new Color(240, 240, 240));
-analyzer = new PasswordAnalyzer();
-
-
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        // Campo de texto
+        analyzer = new PasswordAnalyzer();
+
+// Título
+        JLabel titleLabel = new JLabel("Analizador de Contraseñas");
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(128, 0, 128));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+// Menor espacio arriba (top = 0)
+        gbc.insets = new Insets(0, 10, 10, 10);
+        add(titleLabel, gbc);
+
+// Resto de tu configuración de ventana
+        setTitle("Analizador de Contraseñas");
+        setSize(600, 600);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        getContentPane().setBackground(Color.WHITE);
+       
+       
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Campo de contraseña
         passwordField = new JTextField(20);
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2;
         add(passwordField, gbc);
 
-        // Botón
+        // Botón Analizar
         analyzeButton = new JButton("Analizar");
-        analyzeButton.setBackground(new Color(50, 150, 250));
+        analyzeButton.setBackground(new Color(70, 130, 180));
         analyzeButton.setForeground(Color.WHITE);
         analyzeButton.setFocusPainted(false);
-        gbc.gridy = 1; gbc.gridwidth = 1;
+        gbc.gridy = 2; gbc.gridwidth = 2;
         add(analyzeButton, gbc);
 
         // Barra de progreso
         strengthBar = new JProgressBar(0, 100);
         strengthBar.setStringPainted(true);
-        gbc.gridy = 2; gbc.gridwidth = 2;
+        gbc.gridy = 3;
         add(strengthBar, gbc);
 
-        // Etiqueta de resultado
+        // Resultado de fuerza
         resultLabel = new JLabel("Ingrese una contraseña para analizar");
-        gbc.gridy = 3;
+        resultLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridy = 4;
         add(resultLabel, gbc);
 
-        // Etiqueta de tiempo estimado
+        // Tiempo estimado
         timeLabel = new JLabel("");
-        gbc.gridy = 4;
+        timeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridy = 5;
         add(timeLabel, gbc);
-        
-        // Eriqueta de recomendacio de contraseña
-        recommendation = new JLabel();
-       gbc.gridy = 5;
-        add(recommendation, gbc);
 
+        // Recomendación
+        recommendation = new JLabel("Contraseña recomendada:");
+        recommendation.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridy = 6;
+        add(recommendation, gbc);
+        // Eventos
         analyzeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 analyzePassword();
             }
         });
+
+        // Campo con contraseña recomendada
+        recommendedField = new JTextField();
+        recommendedField.setEditable(false);
+        gbc.gridy = 7;
+        add(recommendedField, gbc);
+
+       // Botón copiar
+        copyButton = new JButton("Copiar");
+        copyButton.setBackground(new Color(0, 153, 76));
+        copyButton.setForeground(Color.WHITE);
+        gbc.gridy = 8;
+        add(copyButton, gbc);
+
+        // Eventos
+        analyzeButton.addActionListener(e -> analyzePassword());
+        copyButton.addActionListener(e -> copyToClipboard());
+
+        setVisible(true);
     }
 private void analyzePassword() {
         String password = passwordField.getText();
@@ -92,30 +132,36 @@ private void analyzePassword() {
         }
 
         PasswordReport report = analyzer.analyze(password);
-        String pass = PasswordRecommendation.enhancePassword(password);
+        String suggested = PasswordRecommendation.enhancePassword(password);
         int strength = (int) (report.getOverallScore() * 100);
+
         strengthBar.setValue(strength);
         strengthBar.setForeground(getColor(report.getStrength()));
         strengthBar.repaint();
 
         resultLabel.setText("Fuerza: " + report.getStrength().getDescription());
         timeLabel.setText("Tiempo estimado de descifrado: " + report.getBruteForceTime());
-        recommendation.setText("Contraseña recomendada: " + pass);
+        recommendedField.setText(suggested);
     }
 
-private Color getColor(PasswordStrength strength) {
+    private void copyToClipboard() {
+        String text = recommendedField.getText();
+        StringSelection selection = new StringSelection(text);
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(selection, null);
+        JOptionPane.showMessageDialog(this, "Contraseña copiada al portapapeles");
+    }
+
+    private Color getColor(PasswordStrength strength) {
         switch (strength) {
-            case VERY_WEAK: return new Color(255, 0, 0);
-            case WEAK: return new Color(255, 165, 0);
-            case MODERATE: return new Color(255, 255, 0);
-            case STRONG: return new Color(144, 238, 144);
-            case VERY_STRONG: return new Color(0, 100, 0);
+            case VERY_WEAK: return Color.RED;
+            case WEAK: return Color.ORANGE;
+            case MODERATE: return Color.YELLOW;
+            case STRONG: return new Color(50, 205, 50); // verde claro
+            case VERY_STRONG: return new Color(0, 128, 0); // verde fuerte
             default: return Color.GRAY;
         }
     }
-
-
-
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -191,3 +237,4 @@ private Color getColor(PasswordStrength strength) {
     private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 }
+
