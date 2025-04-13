@@ -125,24 +125,40 @@ public class MainUI extends javax.swing.JFrame {
         setVisible(true);
     }
 private void analyzePassword() {
-        String password = passwordField.getText();
-        if (password.isEmpty()) {
-            resultLabel.setText("Por favor, ingrese una contraseña.");
-            return;
+    String password = passwordField.getText();
+    if (password.isEmpty()) {
+        resultLabel.setText("Por favor, ingrese una contraseña.");
+        return;
+    }
+
+    PasswordReport report = analyzer.analyze(password);
+    String suggested = PasswordRecommendation.enhancePassword(password);
+    int strength = (int) (report.getOverallScore() * 100);
+
+    strengthBar.setValue(strength);
+    strengthBar.setForeground(getColorByPercentage(strength));
+    strengthBar.setBackground(Color.LIGHT_GRAY); // Fondo neutro
+    strengthBar.setForeground(getColorByPercentage(strength));
+    strengthBar.setString(strength + " %"); // Texto estático
+    strengthBar.setFont(new Font("Arial", Font.BOLD, 12));
+    strengthBar.setForeground(getColorByPercentage(strength)); // Color del avance
+    strengthBar.setOpaque(true);
+    strengthBar.setUI(new javax.swing.plaf.basic.BasicProgressBarUI() {
+        @Override
+        protected Color getSelectionForeground() {
+            return Color.BLACK; // Texto negro sobre color de barra
         }
 
-        PasswordReport report = analyzer.analyze(password);
-        String suggested = PasswordRecommendation.enhancePassword(password);
-        int strength = (int) (report.getOverallScore() * 100);
+        @Override
+        protected Color getSelectionBackground() {
+            return Color.BLACK; // Fondo del texto negro también
+        }
+    });
 
-        strengthBar.setValue(strength);
-        strengthBar.setForeground(getColor(report.getStrength()));
-        strengthBar.repaint();
-
-        resultLabel.setText("Fuerza: " + report.getStrength().getDescription());
-        timeLabel.setText("Tiempo estimado de descifrado: " + report.getBruteForceTime());
-        recommendedField.setText(suggested);
-    }
+    resultLabel.setText("Fuerza: " + report.getStrength().getDescription());
+    timeLabel.setText("Tiempo estimado de descifrado: " + report.getBruteForceTime());
+    recommendedField.setText(suggested);
+}
 
     private void copyToClipboard() {
         String text = recommendedField.getText();
@@ -151,17 +167,13 @@ private void analyzePassword() {
         clipboard.setContents(selection, null);
         JOptionPane.showMessageDialog(this, "Contraseña copiada al portapapeles");
     }
+private Color getColorByPercentage(int value) {
+    if (value <= 25) return Color.RED;
+    else if (value <= 50) return Color.ORANGE;
+    else if (value <= 79) return Color.YELLOW;
+    else return new Color(50, 205, 50); // Verde claro
+}
 
-    private Color getColor(PasswordStrength strength) {
-        switch (strength) {
-            case VERY_WEAK: return Color.RED;
-            case WEAK: return Color.ORANGE;
-            case MODERATE: return Color.YELLOW;
-            case STRONG: return new Color(50, 205, 50); // verde claro
-            case VERY_STRONG: return new Color(0, 128, 0); // verde fuerte
-            default: return Color.GRAY;
-        }
-    }
 
     /**
      * This method is called from within the constructor to initialize the form.
